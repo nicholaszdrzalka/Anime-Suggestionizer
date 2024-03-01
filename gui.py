@@ -7,16 +7,16 @@ from script import fetch_trending_anime
 def update_list():
     season = season_combobox.get()
     year = int(year_entry.get())
-    anime_list = fetch_trending_anime(season, year)
+    anime_list = fetch_trending_anime(year, season)
     listbox.delete(0, tk.END)
     for anime in anime_list:
-        listbox.insert(tk.END, anime['title']['romaji'])
+        listbox.insert(tk.END, anime)
     suggest_random_anime(anime_list)
 
 #function to suggest a random show from list of trending 50 from selected year
 def suggest_random_anime(anime_list):
     random_anime = random.choice(anime_list)
-    suggestion_label.config(text=f"Suggested Anime: {random_anime['title']['romaji']}")
+    suggestion_label.config(text=f"Suggested Anime: {random_anime}")
 
 #main window
 root = tk.Tk()
