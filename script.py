@@ -1,11 +1,20 @@
 import requests
 
-def fetch_trending_anime(year, season):
+def fetch_trending_anime(year, season, genre, animeFormat):
     url = 'https://graphql.anilist.co'
+    #convert min_rating from 1-10 scale to 0-100 scale
     query = '''
-    query ($year: Int, $season: MediaSeason) {
+    query ($year: Int, $season: MediaSeason, $genre: String, $animeFormat: MediaFormat) {
         Page(page: 1, perPage: 50) {
-            media(season: $season, seasonYear: $year, type: ANIME, sort: TRENDING_DESC) {
+            media(
+                season: $season,
+                seasonYear: $year,
+                genre: $genre,
+                format: $animeFormat,
+                type: ANIME,
+                sort: TRENDING_DESC
+            ) {
+                id
                 title {
                     romaji
                 }
@@ -16,8 +25,13 @@ def fetch_trending_anime(year, season):
 
     variables = {
         'year': year,
-        'season': season.upper()
+        'season': season.upper(),
+        'format': animeFormat
     }
+    if genre != "Any":
+        variables['genre'] = genre
+    # if min_rating > 0:
+    #     variables['averageScore_gte'] = min_rating * 10
     try:
         response = requests.post(url, json={'query': query, 'variables': variables})
         data = response.json()
