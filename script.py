@@ -2,15 +2,14 @@ import requests
 
 def fetch_trending_anime(year, season, genre, animeFormat):
     url = 'https://graphql.anilist.co'
-    #convert min_rating from 1-10 scale to 0-100 scale
     query = '''
-    query ($year: Int, $season: MediaSeason, $genre: String, $animeFormat: MediaFormat) {
+    query ($year: Int, $season: MediaSeason, $genre: String, $format: MediaFormat) {
         Page(page: 1, perPage: 50) {
             media(
                 season: $season,
                 seasonYear: $year,
                 genre: $genre,
-                format: $animeFormat,
+                format: $format,
                 type: ANIME,
                 sort: TRENDING_DESC
             ) {
@@ -18,25 +17,37 @@ def fetch_trending_anime(year, season, genre, animeFormat):
                 title {
                     romaji
                 }
+                coverImage{
+                    large
+                }
             }
         }
     }
     '''
 
     variables = {
-        'year': year,
-        'season': season.upper(),
-        'format': animeFormat
+
     }
+    if year != "Any":
+        variables['year'] = int(year)
+    if season != "Any":
+        variables['season'] = season.upper()
     if genre != "Any":
         variables['genre'] = genre
-    # if min_rating > 0:
-    #     variables['averageScore_gte'] = min_rating * 10
+    if animeFormat != "Any":
+        variables['format'] = animeFormat
+
     try:
         response = requests.post(url, json={'query': query, 'variables': variables})
         data = response.json()
         if data and 'data' in data and 'Page' in data['data'] and 'media' in data['data']['Page']:
-            return [anime['title']['romaji'] for anime in data['data']['Page']['media']]
+            return [
+                {
+                    'title': anime['title']['romaji'],
+                    'coverImage': anime['coverImage']['large']
+                }
+                for anime in data['data']['Page']['media']
+            ]
         else:
             print("Data is not in the expected format or is missing.")
             return[]

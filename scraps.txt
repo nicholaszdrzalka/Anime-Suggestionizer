@@ -1,0 +1,62 @@
+#function to update the label of the format value filter
+        #VOID
+# def rating_value_label(value):
+#     rating_value = "Any" if int(value) == 0 else int(value)
+#     rating_value_label.configure(text=f"format: {rating_value}")
+
+#VOID
+#function to fetch and scale image based on environment
+# def fetch_and_scale_image(image_url, scale_factor=1.0):
+#     response = requests.get(image_url)
+#     image = Image.open(BytesIO(response.content))
+
+#     new_size = (int(image.width * scale_factor), int(image.height * scale_factor))
+#     image = image.resize(new_size, Image.ANTIALIAS)
+
+#     photo_image = ctk.CTkImage(image)
+#     return photo_image
+
+#VOID
+# #function to update cover image label
+# def update_image_label(label, image_url, scale_factor=1.0):
+#     photo_image = fetch_and_scale_image(image_url, scale_factor)
+#     label.configure(image=photo_image)
+#     label.image = photo_image
+
+#VOID
+# image_url = anime_list['coverImage']
+# update_image_label(cover_image_label, image_url, scale_factor=2)
+
+#VOID
+#slider for rating selection as search filter
+# ctk.CTkLabel(genre_format_frame, text="Minimum format:").pack(side="left", padx=(10, 5))
+# rating_slider = ctk.CTkSlider(genre_format_frame, from_=0, to=10, number_of_steps=10)
+# rating_slider.set(0) #start at "any" format
+# rating_slider.pack(side="left", padx=5)
+
+#VOID
+#format value label for slider
+# rating_value_label = ctk.CTkLabel(filters_frame, text="format: Any")
+# rating_slider.configure(command=rating_value_label)
+# rating_value_label.pack(side="right", padx=(0, 100), pady=(0, 5))
+
+#convert min_rating from 1-10 scale to 0-100 scale
+# if min_rating > 0:
+#     variables['averageScore_gte'] = min_rating * 10
+
+# scrollbar = Scrollbar(frame, orient=VERTICAL)
+# scrollbar.config(command=listbox.yview)
+# scrollbar.pack(side="right", fill="y")
+
+# updated_anime_list = [listbox.get(index) for index in range(listbox.size())]
+
+# if updated_anime_list:
+#     new_suggestion = choice(updated_anime_list)
+#     suggestion_label.configure(text=f"Suggested show: {new_suggestion}")
+# else:
+#     suggestion_label.configure(text="No more anime to suggest.")
+
+# rating = rating_slider.get()
+
+# for i in range(listbox.size()):
+# listbox_items.append(listbox.get(i))
