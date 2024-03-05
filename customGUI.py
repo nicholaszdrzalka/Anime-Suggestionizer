@@ -3,9 +3,10 @@ import tkinter as tk
 import requests
 import io
 from io import BytesIO
-from PIL import Image, ImageTk
+from PIL import Image
 from datetime import datetime
 from CTkListbox import *
+from CTkScrollableDropdown import *
 from script import fetch_trending_anime
 from random import choice
 ctk.set_appearance_mode("Dark")
@@ -26,6 +27,17 @@ def on_submit():
     animeFormat = format_combo.get()
     global_anime_list = fetch_trending_anime(year, season, genre, animeFormat)
 
+    #check for error: no results found
+    if not global_anime_list:
+        error_label.configure(text="No results found. Please select different filter options.")
+        listbox.delete(0, ctk.END)
+        #clear suggestion label and cover image in case no results error triggers
+        random_title.configure(text="")
+        cover_image_label.configure(image="")
+        return
+    
+    error_label.configure(text="")
+
     #clear listbox of any items
     listbox.delete(0, ctk.END)
     #loop to fill listbox with anime from script query
@@ -33,7 +45,7 @@ def on_submit():
         listbox.insert(ctk.END, anime['title'])
     
     random_anime = choice(global_anime_list)
-    suggestion_label.configure(text=f"Suggested anime: {random_anime['title']}")
+    random_title.configure(text=f"{random_anime['title']}")
     display_cover_image(random_anime['coverImage'], cover_image_label)
 
 #function to allow user to delete selected show from provided top 50 trending anime
@@ -50,7 +62,7 @@ def delete_selected_anime():
         return
     
     #get current suggestion before any deletion
-    current_suggestion = suggestion_label.cget("text").replace("Suggested anime: ", "")
+    current_suggestion = random_title.cget("text")
 
     #flag to determine if the current suggestion is being deleted
     suggestion_deleted = False
@@ -72,14 +84,19 @@ def delete_selected_anime():
             new_title = new_anime['title']
             new_coverImage_url = new_anime['coverImage']
 
-            suggestion_label.configure(text=f"Suggested anime: {new_title}")
+            random_title.configure(text=f"{new_title}")
             display_cover_image(new_coverImage_url, cover_image_label)
         else:
-            suggestion_label.configure(text="No more anime to suggest.")
-            cover_image_label.configure(text="")
+            random_title.configure(text="No more anime to suggest.")
+            cover_image_label.configure(image="")
 
 #function to reroll suggested anime
 def reroll_suggestion():
+    #no results found error handling
+    if not global_anime_list:
+        error_label.configure(text="No results found. Please select different filter options.")
+        return
+
     #get current list of shows (with or without deletions)
     listbox_items = [listbox.get(i) for i in range(listbox.size())]
     
@@ -91,15 +108,15 @@ def reroll_suggestion():
         new_title = new_anime['title']
         new_coverImage_url = new_anime['coverImage']
 
-        suggestion_label.configure(text=f"Suggested anime: {new_title}")
+        random_title.configure(text=f"{new_title}")
         display_cover_image(new_coverImage_url, cover_image_label)
     else:
-        suggestion_label.configure(text="No more anime to suggest.")
-        cover_image_label.configure(text="")
+        random_title.configure(text="No more anime to suggest.")
+        cover_image_label.configure(image="")
 
 #function to generate a list of years to provide as options in year filter
 def generate_year_list(start_year, end_year):
-    return [str(year) for year in range(start_year, end_year + 1)]
+    return [str(year) for year in range(start_year, end_year - 1, -1)]
 
 #function to display cover image of suggested anime
 def display_cover_image(image_url, target_label):
@@ -112,52 +129,62 @@ def display_cover_image(image_url, target_label):
 #main window
 app = ctk.CTk()
 app.title("Anime Suggestionizer")
-app.geometry("600x700")
+app.geometry("800x800")
 app.resizable(False, False)
 
 #frame for filters at top of gui
 filters_frame = ctk.CTkFrame(app)
-filters_frame.pack(pady=(15, 10), padx=20, fill="x")
+filters_frame.pack(pady=(15, 20), padx=20)
 
 #label for filters frame at top of gui
-filters_label = ctk.CTkLabel(filters_frame, text="Filters", text_color="#3bcba6", font=("default_font", 16)).pack(side="top")
+filters_label = ctk.CTkLabel(filters_frame, text="Filters", text_color="#3bcba6", font=("Bahnschrift", 20)).pack(side="top")
 
 #subframe for year and season filters
 year_season_frame = ctk.CTkFrame(filters_frame)
-year_season_frame.pack(pady=(0, 5))
+year_season_frame.pack(pady=(5, 5))
 
 #subframe for genre and format filters
 genre_format_frame = ctk.CTkFrame(filters_frame)
-genre_format_frame.pack(fill="x", pady=(5, 10), padx=10)
+genre_format_frame.pack(pady=(5, 10), padx=10)
 
 #generate year list for year_combobox filter
-start_year = 1971
-end_year = datetime.now().year
+start_year = datetime.now().year
+end_year = 1971
 year_options = ["Any"] + generate_year_list(start_year, end_year)
 
 #year selection
-ctk.CTkLabel(year_season_frame, text="Select a Year:").pack(side="left", padx=(0, 10))
-year_combo = ctk.CTkComboBox(year_season_frame, values=year_options, height=20)
-year_combo.pack(side="left")
+ctk.CTkLabel(year_season_frame, text="Select a Year:", font=("Bahnschrift", 16)).pack(side="left", padx=(5, 10))
+year_combo = ctk.CTkComboBox(year_season_frame, height=30, font=("Bahnschrift", 12))
+CTkScrollableDropdown(year_combo, values=year_options, height=300, justify="left", scrollbar=False, autocomplete=True)
+year_combo.pack(side="left", padx=(0, 10))
 
 #season selection
-ctk.CTkLabel(year_season_frame, text="Select Season:").pack(side="left", padx=(20, 10))
-season_combo = ctk.CTkComboBox(year_season_frame, values=["Any", "Winter", "Spring", "Summer", "Fall"], height=20)
-season_combo.pack(side="left")
+ctk.CTkLabel(year_season_frame, text="Select Season:", font=("Bahnschrift", 16)).pack(side="left", padx=(10, 5))
+season_combo = ctk.CTkComboBox(year_season_frame, height=30, font=("Bahnschrift", 12))
+CTkScrollableDropdown(season_combo, values=["Any", "Winter", "Spring", "Summer", "Fall"], height=200, justify="left", scrollbar=False, autocomplete=True)
+season_combo.pack(side="left", padx=(0, 5))
 
 #button to fetch and display anime
-submit_button = ctk.CTkButton(app, text="search", command=on_submit, fg_color="#125645", hover_color="#3bcba6")
-submit_button.pack()
+submit_button = ctk.CTkButton(app, text="search", width=160, height=40, command=on_submit, fg_color="#125645", hover_color="#3bcba6", font=("Bahnschrift", 14))
+submit_button.pack(pady=(0, 10))
+
+#label for error message if no results are found in search
+error_label = ctk.CTkLabel(app, text="", text_color="red", font=("Bahnschrift", 14))
+error_label.pack()
 
 #list box to display anime in a frame
 frame = ctk.CTkFrame(app)
-listbox = CTkListbox(frame, width=50, height=200, hover_color="#125645", highlight_color="#125645")
+listbox = CTkListbox(frame, height=200, hover_color="#125645", highlight_color="#125645", font="Bahnschrift")
 listbox.pack(side="left", fill="both", expand=True)
-frame.pack(fill="x", pady=(10, 5), padx=20)
+frame.pack(fill="x", pady=(0, 5), padx=20)
 
-#label for random anime suggestion
-suggestion_label = ctk.CTkLabel(app, text="Suggested Anime:", font=("default_font", 16), text_color="#3bcba6")
-suggestion_label.pack(pady=(0, 5))
+#label for random anime suggestion text
+suggestion_label = ctk.CTkLabel(app, text="Suggested Anime:", font=("Bahnschrift", 20), text_color="#3bcba6")
+suggestion_label.pack()
+
+#label for the random anime suggestion title
+random_title = ctk.CTkLabel(app, text="", font=("Bahnschrift", 14), text_color="#3bcba6")
+random_title.pack(pady=(0, 5))
 
 #label for cover image for random anime suggestion
 cover_image_label = ctk.CTkLabel(app, text="")
@@ -165,24 +192,26 @@ cover_image_label.pack()
 
 #frame for delete and reroll buttons
 button_frame = ctk.CTkFrame(app)
-button_frame.pack(pady=10)
+button_frame.pack(pady=(20, 0))
 
 #button to delete selected anime from list if already watched
-delete_button = ctk.CTkButton(button_frame, text="delete", command=delete_selected_anime, fg_color="#125645", hover_color="#3bcba6")
+delete_button = ctk.CTkButton(button_frame, text="delete", width=160, height=40, command=delete_selected_anime, fg_color="#125645", hover_color="#3bcba6", font=("Bahnschrift", 14))
 delete_button.pack(side="left", padx=(5, 20), pady=(5,5))
 
 #button to re-roll suggestion based on current list of shows (before and after any deletion)
-reroll_button = ctk.CTkButton(button_frame, text="re-roll", command=reroll_suggestion, fg_color="#125645", hover_color="#3bcba6")
+reroll_button = ctk.CTkButton(button_frame, text="re-roll", width=160, height=40, command=reroll_suggestion, fg_color="#125645", hover_color="#3bcba6", font=("Bahnschrift", 14))
 reroll_button.pack(side="left", padx=(0, 5), pady=(5,5))
 
-#combo box for genre selection as search filter
-ctk.CTkLabel(genre_format_frame, text="Select Genre:").pack(side="left", padx=(5, 10))
-genre_combo = ctk.CTkComboBox(genre_format_frame, values=genres, height=20)
+#genre selection
+ctk.CTkLabel(genre_format_frame, text="Select Genre:", font=("Bahnschrift", 16)).pack(side="left", padx=(5, 10))
+genre_combo = ctk.CTkComboBox(genre_format_frame, height=30, font=("Bahnschrift", 12))
+CTkScrollableDropdown(genre_combo, values=genres, justify="left", height=300, scrollbar=False, autocomplete=True)
 genre_combo.pack(side="left", padx=(0, 10))
 
-#combo box for format selection as search filter
-ctk.CTkLabel(genre_format_frame, text="Select Anime Format:").pack(side="left", padx=(10, 5))
-format_combo = ctk.CTkComboBox(genre_format_frame, values=["Any", "TV", "MOVIE"], height=20)
-format_combo.pack(side="left")
+#format selection
+ctk.CTkLabel(genre_format_frame, text="Select Anime Format:", font=("Bahnschrift", 16)).pack(side="left", padx=(10, 5))
+format_combo = ctk.CTkComboBox(genre_format_frame, height=30, font=("Bahnschrift", 12))
+CTkScrollableDropdown(format_combo, values=["Any", "TV", "MOVIE"], justify="left", height=150, scrollbar=False, autocomplete=True)
+format_combo.pack(side="left", padx=(0, 5))
 
 app.mainloop()

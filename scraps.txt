@@ -60,3 +60,20 @@
 
 # for i in range(listbox.size()):
 # listbox_items.append(listbox.get(i))
+
+# horizontal_scrollbar = ctk.CTkScrollbar(listbox, orientation="horizontal")
+# horizontal_scrollbar.configure(command=listbox.xview)
+# horizontal_scrollbar.pack(side="bottom", fill="x")
+
+#dictionary to hold original anime titles before truncation for data references
+truncated_title_to_data = {}
+
+#function to truncate title if it exceeds max length
+def truncate_title(title, max_length=80):
+    if len(title) > max_length:
+        return title[:max_length - 3] + "..."
+    return title
+
+    
+global truncated_title_to_data
+truncated_title_to_data.clear()
