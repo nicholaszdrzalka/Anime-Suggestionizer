@@ -15,7 +15,7 @@ class CTkScrollableDropdown(customtkinter.CTkToplevel):
                  scrollbar=True, scrollbar_button_hover_color=None, frame_border_width=2, values=[],
                  command=None, image_values=[], alpha: float = 0.97, frame_corner_radius=20, double_click=False,
                  resize=True, frame_border_color=None, text_color=None, autocomplete=False, 
-                 hover_color="#125645", **button_kwargs):
+                 hover_color="green", **button_kwargs):
         
         super().__init__(takefocus=1)
         

@@ -1,6 +1,7 @@
 import customtkinter as ctk
 import tkinter as tk
 import requests
+import webbrowser
 import io
 from io import BytesIO
 from PIL import Image
@@ -10,7 +11,7 @@ from CTkScrollableDropdown import *
 from script import fetch_trending_anime
 from random import choice
 ctk.set_appearance_mode("Dark")
-ctk.set_default_color_theme("blue")
+ctk.set_default_color_theme("dark-blue")
 
 #list of genres to filter search
 genres = ['Any', 'Action', 'Adventure', 'Comedy', 'Drama', 'Ecchi', 'Fantasy', 'Hentai', 'Horror', 'Mahou Shoujo', 'Mecha', 'Music', 'Mystery', 'Psychological', 'Romance', 'Sci-Fi', 'Slice of Life', 'Sports', 'Supernatural', 'Thriller']
@@ -46,7 +47,7 @@ def on_submit():
     
     random_anime = choice(global_anime_list)
     random_title.configure(text=f"{random_anime['title']}")
-    display_cover_image(random_anime['coverImage'], cover_image_label)
+    display_cover_image(random_anime['coverImage'], random_anime['anilistUrl'], cover_image_label)
 
 #function to allow user to delete selected show from provided top 50 trending anime
 def delete_selected_anime():
@@ -83,9 +84,10 @@ def delete_selected_anime():
             new_anime = choice(available_anime)
             new_title = new_anime['title']
             new_coverImage_url = new_anime['coverImage']
+            new_anilistUrl = new_anime['anilistUrl']
 
             random_title.configure(text=f"{new_title}")
-            display_cover_image(new_coverImage_url, cover_image_label)
+            display_cover_image(new_coverImage_url, new_anilistUrl, cover_image_label)
         else:
             random_title.configure(text="No more anime to suggest.")
             cover_image_label.configure(image="")
@@ -107,9 +109,10 @@ def reroll_suggestion():
         new_anime = choice(available_anime)
         new_title = new_anime['title']
         new_coverImage_url = new_anime['coverImage']
+        new_anilistUrl = new_anime['anilistUrl']
 
         random_title.configure(text=f"{new_title}")
-        display_cover_image(new_coverImage_url, cover_image_label)
+        display_cover_image(new_coverImage_url, new_anilistUrl, cover_image_label)
     else:
         random_title.configure(text="No more anime to suggest.")
         cover_image_label.configure(image="")
@@ -118,13 +121,30 @@ def reroll_suggestion():
 def generate_year_list(start_year, end_year):
     return [str(year) for year in range(start_year, end_year - 1, -1)]
 
+#function to allow user to go to anime's web page on anilist by clicking on cover image
+def on_coverImage_click(event=None, url="https://anilist.co"):
+    webbrowser.open(url)
+
 #function to display cover image of suggested anime
-def display_cover_image(image_url, target_label):
+def display_cover_image(image_url, anime_url, target_label):
     response = requests.get(image_url)
     image_data = Image.open(io.BytesIO(response.content))
     photo = ctk.CTkImage(image_data, size=(120, 160))
     target_label.configure(image=photo)
     target_label.image = photo
+
+    #unbind any previous anime urls
+    target_label.unbind("<Button-1>")
+
+    #define and bind click event handler
+    def on_click(event):
+        webbrowser.open(anime_url)
+
+    #bind anime url to cover image
+    target_label.bind("<Button-1>", on_click)
+
+    #change cursor to pointer when hovering over the cover image
+    target_label.configure(cursor="hand2")
 
 #main window
 app = ctk.CTk()

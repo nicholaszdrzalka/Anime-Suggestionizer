@@ -20,6 +20,7 @@ def fetch_trending_anime(year, season, genre, animeFormat):
                 coverImage{
                     large
                 }
+                siteUrl
             }
         }
     }
@@ -44,7 +45,8 @@ def fetch_trending_anime(year, season, genre, animeFormat):
             return [
                 {
                     'title': anime['title']['romaji'],
-                    'coverImage': anime['coverImage']['large']
+                    'coverImage': anime['coverImage']['large'],
+                    'anilistUrl': anime['siteUrl']
                 }
                 for anime in data['data']['Page']['media']
             ]
