@@ -40,7 +40,7 @@ To download this app's executable and use immediately, click here:
 4. Running the Application
 With the dependencies installed, you can run the application using:
 
-    python customGUI.py
+        python customGUI.py
 ## Features
 
 - Filter Selection: Choose from a variety of filters to tailor the search according to your preferences.
