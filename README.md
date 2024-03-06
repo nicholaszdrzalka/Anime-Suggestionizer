@@ -16,8 +16,6 @@ In addition to listing the results, the app features a unique component that sug
 To download this app's executable and use immediately, click here: 
 #### [Download Anime Suggestionizer](https://github.com/nicholaszdrzalka/Anime-Suggestionizer/releases/tag/v1.0.0)
 
-#### The app is completely safe to download and use. Every line of code is transparently shown through the files in my repository. If you feel more comfortable cloning the repository and running the app locally, please reference the instructions below.
-
 ### Cloning the repository
 #### To run the Anime Suggestionizer on your system, follow these simple steps:
 #### Prerequisites
