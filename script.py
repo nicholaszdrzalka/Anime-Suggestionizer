@@ -1,8 +1,9 @@
 import requests
 
+
 def fetch_trending_anime(year, season, genre, animeFormat):
-    url = 'https://graphql.anilist.co'
-    query = '''
+    url = "https://graphql.anilist.co"
+    query = """
     query ($year: Int, $season: MediaSeason, $genre: String, $format: MediaFormat) {
         Page(page: 1, perPage: 50) {
             media(
@@ -24,35 +25,38 @@ def fetch_trending_anime(year, season, genre, animeFormat):
             }
         }
     }
-    '''
+    """
 
-    variables = {
-
-    }
+    variables = {}
     if year != "Any":
-        variables['year'] = int(year)
+        variables["year"] = int(year)
     if season != "Any":
-        variables['season'] = season.upper()
+        variables["season"] = season.upper()
     if genre != "Any":
-        variables['genre'] = genre
+        variables["genre"] = genre
     if animeFormat != "Any":
-        variables['format'] = animeFormat
+        variables["format"] = animeFormat
 
     try:
-        response = requests.post(url, json={'query': query, 'variables': variables})
+        response = requests.post(url, json={"query": query, "variables": variables})
         data = response.json()
-        if data and 'data' in data and 'Page' in data['data'] and 'media' in data['data']['Page']:
+        if (
+            data
+            and "data" in data
+            and "Page" in data["data"]
+            and "media" in data["data"]["Page"]
+        ):
             return [
                 {
-                    'title': anime['title']['romaji'],
-                    'coverImage': anime['coverImage']['large'],
-                    'anilistUrl': anime['siteUrl']
+                    "title": anime["title"]["romaji"],
+                    "coverImage": anime["coverImage"]["large"],
+                    "anilistUrl": anime["siteUrl"],
                 }
-                for anime in data['data']['Page']['media']
+                for anime in data["data"]["Page"]["media"]
             ]
         else:
             print("Data is not in the expected format or is missing.")
-            return[]
+            return []
     except Exception as e:
         print(f"An error occurred: {e}")
         return []
