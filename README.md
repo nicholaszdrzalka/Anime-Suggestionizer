@@ -14,7 +14,7 @@ In addition to listing the results, the app features a unique component that sug
 - When you run the app for the first time after downloading it, you may receive another warning from your anti-virus/windows about the file being potential malware.
 
 To download this app's executable and use immediately, click here: 
-#### [Download Anime Suggestionizer](https://github.com/nicholaszdrzalka/anime-script/releases/tag/v1.0.0)
+#### [Download Anime Suggestionizer](https://github.com/nicholaszdrzalka/Anime-Suggestionizer/releases/tag/v1.0.0)
 
 #### The app is completely safe to download and use. Every line of code is transparently shown through the files in my repository. If you feel more comfortable cloning the repository and running the app locally, please reference the instructions below.
 
@@ -27,11 +27,11 @@ To download this app's executable and use immediately, click here:
 #### Setup
 1. Clone the repository to your local machine:
 
-        git clone https://github.com/nicholaszdrzalka/anime-script.git
+        git clone https://github.com/nicholaszdrzalka/Anime-Suggestionizer.git
 
 2. Navigate to the project directory:
 
-        cd anime-script
+        cd Anime-Suggestionizer
 
 3. Install the required dependencies:
 
