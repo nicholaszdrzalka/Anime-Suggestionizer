@@ -1,2 +1,18 @@
+# Virtual environments
+venv/
 env/
+.venv/
+
+# Python cache
 __pycache__/
+*.pyc
+*.pyo
+
+# Runtime / user data
+favorites.json
+
+# Environment variables
+.env
+
+# OS
+.DS_Store

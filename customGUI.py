@@ -3,6 +3,8 @@ import tkinter as tk
 import requests
 import webbrowser
 import io
+import json
+import os
 from io import BytesIO
 from PIL import Image
 from datetime import datetime
@@ -38,8 +40,262 @@ genres = [
     "Thriller",
 ]
 
+# --- Persistent favorites storage ---
+FAVORITES_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "favorites.json")
+
+
+def load_favorites():
+    if os.path.exists(FAVORITES_FILE):
+        try:
+            with open(FAVORITES_FILE, "r") as f:
+                return json.load(f)
+        except Exception:
+            return []
+    return []
+
+
+def save_favorites():
+    with open(FAVORITES_FILE, "w") as f:
+        json.dump(favorites_list, f, indent=2)
+
+
+favorites_list = load_favorites()
+
 # global anime list variable for accessing query information across different functions
 global_anime_list = []
+
+# reference to the My List window and its scrollable content frame
+my_list_window = None
+my_list_scroll_frame = None
+
+
+# --- Favorites helpers ---
+
+def is_in_favorites(title):
+    return any(a["title"] == title for a in favorites_list)
+
+
+def update_heart_button():
+    title = random_title.cget("text")
+    if title and title not in ("", "No more anime to suggest.") and is_in_favorites(title):
+        heart_button.configure(text="\u2665")  # filled heart
+    else:
+        heart_button.configure(text="\u2661")  # empty heart
+
+
+def toggle_favorite():
+    title = random_title.cget("text")
+    if not title or title == "No more anime to suggest.":
+        return
+
+    if is_in_favorites(title):
+        favorites_list[:] = [a for a in favorites_list if a["title"] != title]
+    else:
+        anime = next((a for a in global_anime_list if a["title"] == title), None)
+        if anime:
+            favorites_list.append({
+                "title": anime["title"],
+                "coverImage": anime["coverImage"],
+                "anilistUrl": anime["anilistUrl"],
+                "completed": False,
+                "rating": "Not Rated",
+            })
+
+    save_favorites()
+    update_heart_button()
+    refresh_my_list()
+
+
+# --- My List window ---
+
+def make_rating_handler(idx):
+    def handler(value):
+        favorites_list[idx]["rating"] = value
+        save_favorites()
+    return handler
+
+
+def make_completed_handler(var, idx):
+    def handler():
+        favorites_list[idx]["completed"] = var.get()
+        save_favorites()
+    return handler
+
+
+def make_title_link_handler(url):
+    def handler(event=None):
+        webbrowser.open(url)
+    return handler
+
+
+def make_remove_handler(title):
+    def handler():
+        for i, a in enumerate(favorites_list):
+            if a["title"] == title:
+                del favorites_list[i]
+                break
+        save_favorites()
+        update_heart_button()
+        refresh_my_list()
+    return handler
+
+
+def refresh_my_list():
+    global my_list_scroll_frame
+    if my_list_window is None or not my_list_window.winfo_exists():
+        return
+    if my_list_scroll_frame is None:
+        return
+
+    for widget in my_list_scroll_frame.winfo_children():
+        widget.destroy()
+
+    if not favorites_list:
+        ctk.CTkLabel(
+            my_list_scroll_frame,
+            text="No saved anime yet.",
+            font=("Bahnschrift", 14),
+        ).pack(pady=20)
+        return
+
+    rating_options = ["Not Rated"] + [str(i) for i in range(1, 11)]
+
+    for i, anime in enumerate(favorites_list):
+        row = ctk.CTkFrame(my_list_scroll_frame)
+        row.pack(fill="x", padx=5, pady=3)
+
+        # × remove button — pack right-most first so rating sits beside it
+        remove_btn = ctk.CTkButton(
+            row,
+            text="\u00d7",
+            width=30,
+            height=30,
+            command=make_remove_handler(anime["title"]),
+            fg_color="#125645",
+            hover_color="#3bcba6",
+            font=("Bahnschrift", 16),
+        )
+        remove_btn.pack(side="right", padx=(4, 8), pady=6)
+
+        # rating dropdown — right-justified, left of remove button
+        rating_var = tk.StringVar(value=anime.get("rating", "Not Rated"))
+        rating_combo = ctk.CTkOptionMenu(
+            row,
+            values=rating_options,
+            variable=rating_var,
+            command=make_rating_handler(i),
+            font=("Bahnschrift", 12),
+            fg_color="#125645",
+            button_color="#125645",
+            button_hover_color="#3bcba6",
+            width=110,
+            height=28,
+        )
+        rating_combo.pack(side="right", padx=(4, 4), pady=6)
+
+        # watched checkbox — left-most
+        completed_var = tk.BooleanVar(value=anime.get("completed", False))
+        watched_cb = ctk.CTkCheckBox(
+            row,
+            text="",
+            variable=completed_var,
+            command=make_completed_handler(completed_var, i),
+            fg_color="#125645",
+            hover_color="#3bcba6",
+            width=20,
+        )
+        watched_cb.pack(side="left", padx=(19, 0), pady=6)
+
+        # cover image — clickable link to anilist page
+        image_label = ctk.CTkLabel(row, text="")
+        image_label.pack(side="left", padx=(30, 0), pady=6)
+        try:
+            img_data = Image.open(io.BytesIO(requests.get(anime["coverImage"]).content))
+            photo = ctk.CTkImage(img_data, size=(40, 55))
+            image_label.configure(image=photo, cursor="hand2")
+            image_label.image = photo
+            image_label.bind("<Button-1>", make_title_link_handler(anime["anilistUrl"]))
+        except Exception:
+            pass
+
+        # title
+        title_label = ctk.CTkLabel(
+            row,
+            text=anime["title"],
+            font=("Bahnschrift", 13),
+            anchor="nw",
+            wraplength=210,
+            justify="left",
+        )
+        title_label.pack(side="left", padx=(10, 5), pady=6)
+
+
+def open_my_list():
+    global my_list_window, my_list_scroll_frame
+
+    if my_list_window is not None and my_list_window.winfo_exists():
+        my_list_window.focus()
+        return
+
+    my_list_window = ctk.CTkToplevel(app)
+    my_list_window.title("Anime Suggestionizer")
+    my_list_window.geometry("660x500")
+    my_list_window.resizable(False, True)
+
+    ctk.CTkLabel(
+        my_list_window,
+        text="My List",
+        font=("Bahnschrift", 22),
+        text_color="#3bcba6",
+    ).pack(pady=(15, 5))
+
+    # column headers — padx mirrors scroll frame (15 left, +14 right for scrollbar)
+    header_frame = ctk.CTkFrame(my_list_window, fg_color="transparent")
+    header_frame.pack(fill="x", padx=(20, 29), pady=(2, 0))
+
+    # pack right-side headers first to mirror data row packing order
+    ctk.CTkLabel(
+        header_frame, text="", width=46, font=("Bahnschrift", 11)
+    ).pack(side="right")  # spacer for × button
+    ctk.CTkLabel(
+        header_frame, text="Rating", width=118, font=("Bahnschrift", 11),
+        text_color="#888888", anchor="center",
+    ).pack(side="right")
+    ctk.CTkLabel(
+        header_frame, text="Completed", width=20, font=("Bahnschrift", 11),
+        text_color="#888888", anchor="center",
+    ).pack(side="left", padx=(7, 0))
+    ctk.CTkLabel(
+        header_frame, text="Anime Title", font=("Bahnschrift", 11),
+        text_color="#888888", anchor="w",
+    ).pack(side="left", padx=(70, 0))
+
+    ctk.CTkFrame(my_list_window, height=1, fg_color="#333333").pack(
+        fill="x", padx=15, pady=(3, 0)
+    )
+
+    my_list_scroll_frame = ctk.CTkScrollableFrame(my_list_window)
+    my_list_scroll_frame.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+
+    refresh_my_list()
+
+
+# --- Core app functions ---
+
+def highlight_in_listbox(title):
+    for idx in range(listbox.size()):
+        if listbox.get(idx) == title:
+            listbox.select(idx)
+            break
+
+
+def on_listbox_select(selected_title):
+    anime = next((a for a in global_anime_list if a["title"] == selected_title), None)
+    if anime is None:
+        return
+    random_title.configure(text=selected_title)
+    display_cover_image(anime["coverImage"], anime["anilistUrl"], cover_image_label)
+    update_heart_button()
 
 
 # function that fetches top 50 trending anime according to user selections from API
@@ -60,6 +316,7 @@ def on_submit():
         # clear suggestion label and cover image in case no results error triggers
         random_title.configure(text="")
         cover_image_label.configure(image="")
+        update_heart_button()
         return
 
     error_label.configure(text="")
@@ -75,6 +332,8 @@ def on_submit():
     display_cover_image(
         random_anime["coverImage"], random_anime["anilistUrl"], cover_image_label
     )
+    update_heart_button()
+    highlight_in_listbox(random_anime["title"])
 
 
 # function to allow user to delete selected show from provided top 50 trending anime
@@ -118,9 +377,12 @@ def delete_selected_anime():
 
             random_title.configure(text=f"{new_title}")
             display_cover_image(new_coverImage_url, new_anilistUrl, cover_image_label)
+            highlight_in_listbox(new_title)
         else:
             random_title.configure(text="No more anime to suggest.")
             cover_image_label.configure(image="")
+
+        update_heart_button()
 
 
 # function to reroll suggested anime
@@ -148,9 +410,12 @@ def reroll_suggestion():
 
         random_title.configure(text=f"{new_title}")
         display_cover_image(new_coverImage_url, new_anilistUrl, cover_image_label)
+        highlight_in_listbox(new_title)
     else:
         random_title.configure(text="No more anime to suggest.")
         cover_image_label.configure(image="")
+
+    update_heart_button()
 
 
 # function to generate a list of years to provide as options in year filter
@@ -188,7 +453,7 @@ def display_cover_image(image_url, anime_url, target_label):
 # main window
 app = ctk.CTk()
 app.title("Anime Suggestionizer")
-app.geometry("800x800")
+app.geometry("800x820")
 app.resizable(False, False)
 
 # frame for filters at top of gui
@@ -260,6 +525,24 @@ submit_button.pack(pady=(0, 10))
 error_label = ctk.CTkLabel(app, text="", text_color="red", font=("Bahnschrift", 14))
 error_label.pack()
 
+# subtle "My List" button above the listbox, right-aligned
+listbox_header = ctk.CTkFrame(app, fg_color="transparent")
+listbox_header.pack(fill="x", padx=20, pady=(0, 4))
+my_list_button = ctk.CTkButton(
+    listbox_header,
+    text="My List",
+    width=80,
+    height=26,
+    command=open_my_list,
+    fg_color="transparent",
+    hover_color="#125645",
+    border_width=1,
+    border_color="#3bcba6",
+    text_color="#3bcba6",
+    font=("Bahnschrift", 12),
+)
+my_list_button.pack(side="right")
+
 # list box to display anime in a frame
 frame = ctk.CTkFrame(app)
 listbox = CTkListbox(
@@ -268,6 +551,7 @@ listbox = CTkListbox(
     hover_color="#125645",
     highlight_color="#125645",
     font="Bahnschrift",
+    command=on_listbox_select,
 )
 listbox.pack(side="left", fill="both", expand=True)
 frame.pack(fill="x", pady=(0, 5), padx=20)
@@ -288,9 +572,9 @@ random_title.pack(pady=(0, 5))
 cover_image_label = ctk.CTkLabel(app, text="")
 cover_image_label.pack()
 
-# frame for delete and reroll buttons
+# frame for action buttons
 button_frame = ctk.CTkFrame(app)
-button_frame.pack(pady=(20, 0))
+button_frame.pack(pady=(15, 0))
 
 # button to delete selected anime from list if already watched
 delete_button = ctk.CTkButton(
@@ -303,7 +587,21 @@ delete_button = ctk.CTkButton(
     hover_color="#3bcba6",
     font=("Bahnschrift", 14),
 )
-delete_button.pack(side="left", padx=(5, 20), pady=(5, 5))
+delete_button.pack(side="left", padx=(5, 15), pady=(5, 5))
+
+# heart button to save/unsave current suggestion to favorites
+heart_button = ctk.CTkButton(
+    button_frame,
+    text="\u2661",  # empty heart; filled when in favorites
+    width=55,
+    height=40,
+    command=toggle_favorite,
+    fg_color="transparent",
+    hover_color="#125645",
+    border_width=0,
+    font=("Bahnschrift", 20),
+)
+heart_button.pack(side="left", padx=(1, 14), pady=(5, 5))
 
 # button to re-roll suggestion based on current list of shows (before and after any deletion)
 reroll_button = ctk.CTkButton(
@@ -316,7 +614,7 @@ reroll_button = ctk.CTkButton(
     hover_color="#3bcba6",
     font=("Bahnschrift", 14),
 )
-reroll_button.pack(side="left", padx=(0, 5), pady=(5, 5))
+reroll_button.pack(side="left", padx=(0, 6), pady=(5, 5))
 
 # genre selection
 ctk.CTkLabel(genre_format_frame, text="Select Genre:", font=("Bahnschrift", 16)).pack(
